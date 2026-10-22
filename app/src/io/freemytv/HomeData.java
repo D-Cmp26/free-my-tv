@@ -40,13 +40,13 @@ final class HomeData {
         return "https://api.open-meteo.com/v1/forecast?latitude=" + Prefs.latitude() + "&longitude=" + Prefs.longitude() + WEATHER_QUERY;
     }
 
-    private static final long SPORTS_EVERY = 30 * 60_000L, WEATHER_EVERY = 30 * 60_000L;
+    private static final long SPORTS_EVERY = 15 * 60_000L, WEATHER_EVERY = 30 * 60_000L;
     interface Listener { void onData(); }
 
     static final class Sports {
-        String f1Next = "";       // ex: "GP Mexique · Dim"
-        String alonsoRank = "";   // ex: "Alonso P9 (42 pts)"
-        String tfcNext = "";      // ex: "TFC vs Lyon"
+        String f1Next = "";
+        String alonsoRank = "";
+        String tfcNext = "";
     }
 
     static final class Weather {
@@ -106,7 +106,8 @@ final class HomeData {
 
     void refreshIfStale() {
         long now = System.currentTimeMillis();
-        if (!fetchingSports && (now - sportsAt > SPORTS_EVERY || now < sportsAt) && !failedRecently(sportsFailedAt, now)) {
+        // Condition directe sans dépendance crypto
+        if (!fetchingSports && (now - sportsAt > SPORTS_EVERY || now < sportsAt || sportsHeadline().isEmpty()) && !failedRecently(sportsFailedAt, now)) {
             fetchingSports = true;
             io.execute(() -> {
                 try {
@@ -162,7 +163,7 @@ final class HomeData {
             AppLog.w("F1 Next: " + e.getMessage());
         }
 
-        // 2. F1 Classement Fernando Alonso
+        // 2. F1 Fernando Alonso
         try {
             String alonsoJson = get("https://api.jolpica.net/ergast/f1/current/drivers/alonso/driverStandings.json");
             JSONObject o = new JSONObject(alonsoJson);
@@ -178,7 +179,7 @@ final class HomeData {
             AppLog.w("F1 Alonso: " + e.getMessage());
         }
 
-        // 3. Prochain match Toulouse FC (ID TheSportsDB 133714)
+        // 3. Prochain match TFC
         try {
             String tfcJson = get("https://www.thesportsdb.com/api/v1/json/3/eventsnext.php?id=133714");
             JSONObject o = new JSONObject(tfcJson);
@@ -196,7 +197,7 @@ final class HomeData {
     }
 
     private static boolean failedRecently(long at, long now) {
-        return at != 0 && now >= at && now - at < 2 * 60_000L;
+        return at != 0 && now >= at && now - at < 60_000L;
     }
 
     private void notifyListeners() {
@@ -267,7 +268,7 @@ final class HomeData {
         HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
         c.setConnectTimeout(6000);
         c.setReadTimeout(6000);
-        c.setRequestProperty("User-Agent", "FreeMyTV");
+        c.setRequestProperty("User-Agent", "Mozilla/5.0 (Android TV; FreeMyTV)");
         try {
             if (c.getResponseCode() != 200) throw new IOException("HTTP " + c.getResponseCode());
             try (InputStream in = c.getInputStream()) {
@@ -290,10 +291,6 @@ final class HomeData {
         long rise = Shaders.timeOfDay(weather.sunrise, 6 * 60 * 60_000L);
         long set = Shaders.timeOfDay(weather.sunset, 18 * 60 * 60_000L);
         return t < rise || t >= set;
-    }
-
-    private static Locale locale() {
-        return Ui.locale();
     }
 
     static String condition(int code, boolean day) {
@@ -328,6 +325,14 @@ final class HomeData {
 
     static String hour(long at) {
         return Ui.once("hour", at, () -> Ui.datePattern("format|h a").format(at));
+    }
+
+    static String staleness(long at, long every) {
+        if (at == 0) return "";
+        long age = System.currentTimeMillis() - at;
+        if (age < every * 2) return "";
+        long minutes = age / 60_000;
+        return minutes < 60 ? Ui.trf("{n} min ago", "n", minutes) : Ui.trf("{n} h ago", "n", minutes / 60);
     }
 
     static String sportsHeadline() {
