@@ -52,10 +52,10 @@ import java.util.function.Consumer;
  *    the first card's photo, heavily blurred and almost white (Backdrop); without one, a light gradient;
  *  - at the bottom, the glass shelf with the apps (icons in each brand's color, like the tvOS Dock; the focused one
  *    grows);
- *  - Ôåô on the shelf: everything moves up and the bottom drawer appears (inputs, shortcuts, weather for the next hours
- *    and quotes with the 24 h change); the background lightens (darkens at night). Ôåæ or Back closes it;
+ *  - ↓ on the shelf: everything moves up and the bottom drawer appears (inputs, shortcuts, weather for the next hours
+ *    and quotes with the 24 h change); the background lightens (darkens at night). ↑ or Back closes it;
  *  - from sunset to sunrise, a night look: dark background, smoked glass and white text.
- * Measurements are in a 1920├ù1080 space (k = width / 1920). The screen is split into layers so the TV's weak GPU only
+ * Measurements are in a 1920×1080 space (k = width / 1920). The screen is split into layers so the TV's weak GPU only
  * redraws what changed.
  */
 final class HomeView extends ViewGroup implements Choreographer.FrameCallback, HomeData.Listener, Recs.Listener {
@@ -68,7 +68,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     // Shelf: tiles with corners concentric with the glass (glass radius = tile radius + padding).
     // Shelf like the tvOS 27 Dock: icons in each brand's color, 48 apart, and the glass bar hugging them with 40 of
     // padding (the focused icon grows 20% without touching its edge). The icons are 16:9, the shape of the apps' TV
-    // banners, so those are never stretched: up to 224 ├ù 126, 178 ├ù 100 with eight apps.
+    // banners, so those are never stretched: up to 224 × 126, 178 × 100 with eight apps.
     private static final float SHELF_PAD = 40, TILE_GAP = 48;
     private static final float TILE_RADIUS = 22;
     // Tile focus (Apple TV style): it grows from the center and its shadow drops (it "rises" toward the viewer).
@@ -165,7 +165,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private final RectF platterRect = new RectF();
     private int shelfIndex;
 
-    // Moving apps on the shelf (as on Apple TV): hold OK on a tile, then ÔåÉ ÔåÆ move it, OK drops it, Back cancels. The
+    // Moving apps on the shelf (as on Apple TV): hold OK on a tile, then ← → move it, OK drops it, Back cancels. The
     // lifted tile wiggles; the others slide to their new places (each slot's x offset is a spring that returns to 0).
     private static final long HOLD_MS = 500, WIGGLE_MS = 300;
     private static final float LIFT_GROW = 0.08f, WIGGLE_DEG = 1.5f;
@@ -362,8 +362,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         toastLayer = new Layer(a, TOAST);
         // Hardware layers on the GPU: only the one that changed is redrawn; moving, fading and scaling stay cheap.
         // Not on Android 8 to 11: on older GPUs (a Mi Box 3's Mali-450) redrawing and compositing a big layer on every
-        // frame cost more than drawing straight to the screen (measured: focus on the picks 33 ÔåÆ 12 ms a frame, the
-        // drawer 19 ÔåÆ 17 ms).
+        // frame cost more than drawing straight to the screen (measured: focus on the picks 33 → 12 ms a frame, the
+        // drawer 19 → 17 ms).
         for (View v : new View[] {heroLayer, status, platter, tiles, drawerLayer, sheetLayer}) v.setLayerType(Ui.LEGACY ? LAYER_TYPE_NONE : LAYER_TYPE_HARDWARE, null);
         for (View v : new View[] {sky, heroLayer, status, platter, tiles, drawerLayer, sheetLayer, toastLayer}) {
             v.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);   // TalkBack reads the items (Spoken)
@@ -800,7 +800,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         return h;
     }
 
-    /** ÔåÉ/ÔåÆ on the hero: the next (or previous) of this hour's picks. */
+    /** ←/→ on the hero: the next (or previous) of this hour's picks. */
     private boolean browse(int dir) {
         if (picks.size() < 2) return false;
         int next = pickIndex;
@@ -882,7 +882,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         }
     }
 
-    /** Advances the day Ôçä night transition; true while it runs. */
+    /** Advances the day ⇄ night transition; true while it runs. */
     private boolean tickNight(long up) {
         if (nightAt == 0) return false;
         float t = Ui.clamp((up - nightAt) / NIGHT_MS), to = nightTarget ? 1 : 0;
@@ -1339,7 +1339,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     }
 
     /**
-     * Logo at its "optical" size (all with the same amount of ink, plus each one's own adjustment, never past 80% ├ù 62%
+     * Logo at its "optical" size (all with the same amount of ink, plus each one's own adjustment, never past 80% × 62%
      * of the tile), centered and already filtered down to the focused tile size and to the resting one: focused or at
      * rest it is drawn pixel for pixel, without resampling (on a 720p UI, shrinking at draw time made it look jagged).
      */
@@ -1376,7 +1376,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         return out;
     }
 
-    /** Halves the size while it can (a 2├ù2 average, no aliasing), then finishes at the exact size. */
+    /** Halves the size while it can (a 2×2 average, no aliasing), then finishes at the exact size. */
     private static Bitmap downscale(Bitmap src, int w, int h) {
         w = Math.max(1, w);
         h = Math.max(1, h);
@@ -1598,7 +1598,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             textPricesAt = data.pricesAt;
             textMinute = minute;
             String stale = HomeData.staleness(data.pricesAt, 5 * 60_000L);
-            staleText = stale.isEmpty() ? Ui.tr("prochains ├®v├®nements") : Ui.trf("quotes|{ago}", "ago", stale);
+            staleText = stale.isEmpty() ? Ui.tr("prochains événements") : Ui.trf("quotes|{ago}", "ago", stale);
             for (int i = 0; i < HomeData.COINS.length; i++) {
                 priceText[i] = HomeData.brl(data.prices[i]);
                 changeText[i] = HomeData.change(data.changes[i]);
@@ -1659,17 +1659,17 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private void drawPrices(Canvas c, RectF r) {
         float x = r.left + 34 * k, right = r.right - 34 * k;
         c.drawText("Sports", x, r.top + 54 * k, cardTitle);
-        c.drawText("prochains ├®v├®nements", right, r.top + 54 * k, cardDimRight);
+        c.drawText("prochains événements", right, r.top + 54 * k, cardDimRight);
 
         String f1Raw = HomeData.f1Text();
         String alonsoRaw = HomeData.alonsoText();
         String tfcRaw = HomeData.tfcText();
 
-        String f1Val = f1Raw != null && !f1Raw.isEmpty() ? f1Raw.replace("­ƒÅÄ´©Å ", "") : "USA (23/10)";
-        String alonsoVal = alonsoRaw != null && !alonsoRaw.isEmpty() ? alonsoRaw.replace("Alonso ", "") : "P9 ┬À 62 pts";
-        String tfcVal = tfcRaw != null && !tfcRaw.isEmpty() ? tfcRaw.replace("ÔÜ¢ TFC ", "").replace("ÔÜ¢ ", "") : "vs Troyes (25/10)";
+        String f1Val = f1Raw != null && !f1Raw.isEmpty() ? f1Raw.replace("🏎️ ", "") : "USA (23/10)";
+        String alonsoVal = alonsoRaw != null && !alonsoRaw.isEmpty() ? alonsoRaw.replace("Alonso ", "") : "P9 · 62 pts";
+        String tfcVal = tfcRaw != null && !tfcRaw.isEmpty() ? tfcRaw.replace("⚽ TFC ", "").replace("⚽ ", "") : "vs Troyes (25/10)";
 
-        String[] labels = {"­ƒÅÄ´©Å Formule 1", "­ƒÅÄ´©Å Fernando Alonso", "ÔÜ¢ Toulouse FC"};
+        String[] labels = {"🏎️ Formule 1", "🏎️ Fernando Alonso", "⚽ Toulouse FC"};
         String[] values = {f1Val, alonsoVal, tfcVal};
 
         for (int j = 0; j < 3; j++) {
@@ -2201,7 +2201,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         reorderAt = SystemClock.uptimeMillis();
         moveLift.target = 1;
         click.open();
-        showToast(Ui.tr("ÔåÉ ÔåÆ to move ┬À OK to drop ┬À Back to cancel"));
+        showToast(Ui.tr("← → to move · OK to drop · Back to cancel"));
         retarget(false);    // TalkBack reads "Moving <app>, position i of n"
     }
 
@@ -2568,7 +2568,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private String quotesText() {
         StringBuilder s = new StringBuilder(Ui.tr("Sports"));
         String stale = HomeData.staleness(data.pricesAt, 5 * 60_000L);
-        s.append(", ").append(stale.isEmpty() ? Ui.tr("prochains ├®v├®nements") : Ui.trf("quotes|{ago}", "ago", stale)).append('.');
+        s.append(", ").append(stale.isEmpty() ? Ui.tr("prochains événements") : Ui.trf("quotes|{ago}", "ago", stale)).append('.');
         for (int i : HomeData.active()) {
             s.append(' ').append(HomeData.coinName(i)).append(' ').append(HomeData.brl(data.prices[i]));
             if (!Double.isNaN(data.changes[i])) s.append(", ").append(HomeData.change(data.changes[i]));
@@ -2733,7 +2733,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     /**
      * Recommendation card: the title's photo (already at the focused card size, so it stays sharp), rounded corners and
      * a soft shadow; when focused, it grows 5%, rises and lights up its border. Below it, the title (and on the large
-     * card, genre ┬À runtime ┬À service).
+     * card, genre · runtime · service).
      */
     private void drawLightCard(Canvas c, int i) {
         RectF base = cardRects[i];
