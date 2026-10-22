@@ -178,10 +178,10 @@ final class HomeData {
                 String dateIso = ev.optString("date", "");
                 String d = dateIso.length() >= 10 ? " (" + dateIso.substring(8, 10) + "/" + dateIso.substring(5, 7) + ")" : "";
                 f1Val = name + d;
-                sports.f1Next = "­ƒÅÄ´©Å " + f1Val;
+                sports.f1Next = "🏎️ " + f1Val;
             }
         } catch (Exception e) {
-            sports.f1Next = "­ƒÅÄ´©Å " + f1Val;
+            sports.f1Next = "🏎️ " + f1Val;
         }
 
         // 2. Alonso Classement et Points
@@ -209,7 +209,7 @@ final class HomeData {
                                         if ("points".equalsIgnoreCase(st.optString("name"))) pts = st.optString("displayValue", "");
                                     }
                                 }
-                                alonsoVal = "P" + rk + (pts.isEmpty() ? "" : " ┬À " + pts + " pts");
+                                alonsoVal = "P" + rk + (pts.isEmpty() ? "" : " · " + pts + " pts");
                                 break;
                             }
                         }
@@ -234,16 +234,11 @@ final class HomeData {
                 String dateIso = nextEv.optString("date", "");
                 String d = dateIso.length() >= 10 ? " (" + dateIso.substring(8, 10) + "/" + dateIso.substring(5, 7) + ")" : "";
                 tfcVal = "vs " + (opp.isEmpty() ? "Troyes" : opp) + d;
-                sports.tfcNext = "ÔÜ¢ TFC " + tfcVal;
+                sports.tfcNext = "⚽ TFC " + tfcVal;
             }
         } catch (Exception e) {
-            sports.tfcNext = "ÔÜ¢ TFC " + tfcVal;
+            sports.tfcNext = "⚽ TFC " + tfcVal;
         }
-
-        // Remplissage des 3 slots pour le tableau du bas
-        
-        
-        
     }
 
     private static boolean failedRecently(long at, long now) {
@@ -365,8 +360,8 @@ final class HomeData {
     }
 
     static String degrees(double v) {
-        if (Double.isNaN(v)) return "ÔÇö";
-        return Math.round(fahrenheit() ? v * 9 / 5 + 32 : v) + "┬░";
+        if (Double.isNaN(v)) return "—";
+        return Math.round(fahrenheit() ? v * 9 / 5 + 32 : v) + "°";
     }
 
     private static boolean fahrenheit() {
@@ -395,16 +390,15 @@ final class HomeData {
         if (!s.f1Next.isEmpty()) list.add(s.f1Next);
         if (!s.alonsoRank.isEmpty()) list.add(s.alonsoRank);
         if (!s.tfcNext.isEmpty()) list.add(s.tfcNext);
-        return String.join("  ┬À  ", list);
+        return String.join("  ·  ", list);
     }
 
-    static String price(double v) { return "ÔÇö"; }
-    static String compact(double v) { return "ÔÇö"; }
-    static String brl(double v) { return "ÔÇö"; }
+    static String price(double v) { return "—"; }
+    static String compact(double v) { return "—"; }
+    static String brl(double v) { return "—"; }
     static String change(double v) { return ""; }
 
     public static String f1Text() { return instance != null && instance.sports != null ? instance.sports.f1Next : ""; }
     public static String alonsoText() { return instance != null && instance.sports != null ? instance.sports.alonsoRank : ""; }
     public static String tfcText() { return instance != null && instance.sports != null ? instance.sports.tfcNext : ""; }
 }
-
