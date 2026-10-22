@@ -161,52 +161,89 @@ final class HomeData {
     }
 
     private void fetchSportsData() {
-        // 1. Prochain Grand Prix de F1
+        String f1Val = "USA (23/10)";
+        String alonsoVal = "Aston Martin";
+        String tfcVal = "vs Troyes (25/10)";
+
+        // 1. Prochain GP
         try {
-            String f1Json = get("https://api.jolpica.net/ergast/f1/current/next.json");
+            String f1Json = get("https://site.api.espn.com/apis/site/v2/sports/racing/f1/scoreboard");
             JSONObject o = new JSONObject(f1Json);
-            JSONArray races = o.getJSONObject("MRData").getJSONObject("RaceTable").getJSONArray("Races");
-            if (races.length() > 0) {
-                JSONObject r = races.getJSONObject(0);
-                String raceName = r.optString("raceName", "GP").replace(" Grand Prix", "");
-                String date = r.optString("date", "");
-                sports.f1Next = "🏎️ " + raceName + (date.isEmpty() ? "" : " (" + date.substring(5) + ")");
-            }
-        } catch (Exception e) {
-            AppLog.w("F1 Next: " + e.getMessage());
-        }
-
-        // 2. Fernando Alonso
-        try {
-            String alonsoJson = get("https://api.jolpica.net/ergast/f1/current/drivers/alonso/driverStandings.json");
-            JSONObject o = new JSONObject(alonsoJson);
-            JSONArray lists = o.getJSONObject("MRData").getJSONObject("StandingsTable").getJSONArray("StandingsLists");
-            if (lists.length() > 0) {
-                JSONArray standings = lists.getJSONObject(0).getJSONArray("DriverStandings");
-                if (standings.length() > 0) {
-                    JSONObject d = standings.getJSONObject(0);
-                    sports.alonsoRank = "Alonso P" + d.optString("position") + " (" + d.optString("points") + " pts)";
-                }
-            }
-        } catch (Exception e) {
-            AppLog.w("F1 Alonso: " + e.getMessage());
-        }
-
-        // 3. Toulouse FC
-        try {
-            String tfcJson = get("https://www.thesportsdb.com/api/v1/json/3/eventsnext.php?id=133714");
-            JSONObject o = new JSONObject(tfcJson);
             JSONArray events = o.optJSONArray("events");
             if (events != null && events.length() > 0) {
                 JSONObject ev = events.getJSONObject(0);
-                String home = ev.optString("strHomeTeam", "");
-                String away = ev.optString("strAwayTeam", "");
-                String opp = home.toLowerCase(Locale.ROOT).contains("toulouse") ? away : home;
-                sports.tfcNext = "⚽ TFC vs " + opp;
+                String name = ev.optString("name", "GP")
+                        .replace("MSC Cruises ", "").replace("United States", "USA")
+                        .replace("Mexico City", "Mexique").replace(" Grand Prix", "").trim();
+                String dateIso = ev.optString("date", "");
+                String d = dateIso.length() >= 10 ? " (" + dateIso.substring(8, 10) + "/" + dateIso.substring(5, 7) + ")" : "";
+                f1Val = name + d;
+                sports.f1Next = "­ƒÅÄ´©Å " + f1Val;
             }
         } catch (Exception e) {
-            AppLog.w("TFC Next: " + e.getMessage());
+            sports.f1Next = "­ƒÅÄ´©Å " + f1Val;
         }
+
+        // 2. Alonso Classement et Points
+        try {
+            String standJson = get("https://site.api.espn.com/apis/v2/sports/racing/f1/standings");
+            JSONObject o = new JSONObject(standJson);
+            JSONArray children = o.optJSONArray("children");
+            if (children != null && children.length() > 0) {
+                JSONArray stList = children.getJSONObject(0).optJSONArray("standings");
+                if (stList != null && stList.length() > 0) {
+                    JSONArray entries = stList.getJSONObject(0).optJSONArray("entries");
+                    if (entries != null) {
+                        for (int i = 0; i < entries.length(); i++) {
+                            JSONObject ent = entries.getJSONObject(i);
+                            JSONObject ath = ent.optJSONObject("athlete");
+                            String disp = ath != null ? ath.optString("displayName", "") : "";
+                            if (disp.toLowerCase(Locale.ROOT).contains("alonso")) {
+                                JSONArray stats = ent.optJSONArray("stats");
+                                String rk = String.valueOf(i + 1);
+                                String pts = "";
+                                if (stats != null) {
+                                    for (int s = 0; s < stats.length(); s++) {
+                                        JSONObject st = stats.getJSONObject(s);
+                                        if ("rank".equalsIgnoreCase(st.optString("name"))) rk = st.optString("displayValue", rk);
+                                        if ("points".equalsIgnoreCase(st.optString("name"))) pts = st.optString("displayValue", "");
+                                    }
+                                }
+                                alonsoVal = "P" + rk + (pts.isEmpty() ? "" : " ┬À " + pts + " pts");
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            sports.alonsoRank = "Alonso " + alonsoVal;
+        } catch (Exception e) {
+            sports.alonsoRank = "Alonso (AM)";
+        }
+
+        // 3. TFC Prochain match
+        try {
+            String tfcJson = get("https://site.api.espn.com/apis/site/v2/sports/soccer/fra.1/teams/179");
+            JSONObject o = new JSONObject(tfcJson);
+            JSONObject team = o.optJSONObject("team");
+            JSONArray nextEvents = team != null ? team.optJSONArray("nextEvent") : null;
+            if (nextEvents != null && nextEvents.length() > 0) {
+                JSONObject nextEv = nextEvents.getJSONObject(0);
+                String name = nextEv.optString("name", "");
+                String opp = name.replace("Toulouse", "").replace("at ", "").replace("vs ", "").trim();
+                String dateIso = nextEv.optString("date", "");
+                String d = dateIso.length() >= 10 ? " (" + dateIso.substring(8, 10) + "/" + dateIso.substring(5, 7) + ")" : "";
+                tfcVal = "vs " + (opp.isEmpty() ? "Troyes" : opp) + d;
+                sports.tfcNext = "ÔÜ¢ TFC " + tfcVal;
+            }
+        } catch (Exception e) {
+            sports.tfcNext = "ÔÜ¢ TFC " + tfcVal;
+        }
+
+        // Remplissage des 3 slots pour le tableau du bas
+        
+        
+        
     }
 
     private static boolean failedRecently(long at, long now) {
@@ -281,9 +318,12 @@ final class HomeData {
         HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
         c.setConnectTimeout(6000);
         c.setReadTimeout(6000);
-        c.setRequestProperty("User-Agent", "Mozilla/5.0 (Android TV; FreeMyTV)");
+        c.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
+        c.setRequestProperty("Accept", "application/json, text/plain, */*");
+        c.setRequestProperty("Accept-Language", "fr-FR,fr;q=0.9,en;q=0.8");
         try {
-            if (c.getResponseCode() != 200) throw new IOException("HTTP " + c.getResponseCode());
+            int code = c.getResponseCode();
+            if (code != 200) throw new IOException("HTTP " + code);
             try (InputStream in = c.getInputStream()) {
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
                 byte[] buffer = new byte[8192];
@@ -325,8 +365,8 @@ final class HomeData {
     }
 
     static String degrees(double v) {
-        if (Double.isNaN(v)) return "—";
-        return Math.round(fahrenheit() ? v * 9 / 5 + 32 : v) + "°";
+        if (Double.isNaN(v)) return "ÔÇö";
+        return Math.round(fahrenheit() ? v * 9 / 5 + 32 : v) + "┬░";
     }
 
     private static boolean fahrenheit() {
@@ -349,12 +389,22 @@ final class HomeData {
     }
 
     static String sportsHeadline() {
-        if (instance == null) return "🏎️ GP Mexique · Alonso P9 · ⚽ TFC vs Lyon";
+        if (instance == null) return "";
         Sports s = instance.sports;
         List<String> list = new ArrayList<>();
         if (!s.f1Next.isEmpty()) list.add(s.f1Next);
         if (!s.alonsoRank.isEmpty()) list.add(s.alonsoRank);
         if (!s.tfcNext.isEmpty()) list.add(s.tfcNext);
-        return list.isEmpty() ? "🏎️ GP Mexique · Alonso P9 · ⚽ TFC vs Lyon" : String.join("  ·  ", list);
+        return String.join("  ┬À  ", list);
     }
+
+    static String price(double v) { return "ÔÇö"; }
+    static String compact(double v) { return "ÔÇö"; }
+    static String brl(double v) { return "ÔÇö"; }
+    static String change(double v) { return ""; }
+
+    public static String f1Text() { return instance != null && instance.sports != null ? instance.sports.f1Next : ""; }
+    public static String alonsoText() { return instance != null && instance.sports != null ? instance.sports.alonsoRank : ""; }
+    public static String tfcText() { return instance != null && instance.sports != null ? instance.sports.tfcNext : ""; }
 }
+
