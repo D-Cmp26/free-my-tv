@@ -15,9 +15,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.text.NumberFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -28,7 +25,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 final class HomeData {
-    private static final String CURRENCY = Config.CURRENCY.trim().toUpperCase(Locale.ROOT);
+    static final String[] COINS = {"F1", "ALONSO", "TFC"};
+    static final String[] COIN_NAMES = {"Formule 1", "Fernando Alonso", "Toulouse FC"};
+
     private static final String WEATHER_QUERY = "&current=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset"
             + "&hourly=temperature_2m,weather_code,is_day&timezone=auto&forecast_days=2";
 
@@ -67,7 +66,22 @@ final class HomeData {
         return instance;
     }
 
-    volatile long sportsAt, weatherAt;
+    static int coinCount() {
+        return 3;
+    }
+
+    static int[] active() {
+        return new int[] {0, 1, 2};
+    }
+
+    static String coinName(int i) {
+        return i >= 0 && i < COIN_NAMES.length ? COIN_NAMES[i] : "";
+    }
+
+    final double[] prices = {Double.NaN, Double.NaN, Double.NaN, Double.NaN};
+    final double[] changes = {Double.NaN, Double.NaN, Double.NaN, Double.NaN};
+
+    volatile long sportsAt, weatherAt, pricesAt;
     volatile Weather weather = new Weather();
     volatile Sports sports = new Sports();
 
@@ -106,8 +120,7 @@ final class HomeData {
 
     void refreshIfStale() {
         long now = System.currentTimeMillis();
-        // Condition directe sans dépendance crypto
-        if (!fetchingSports && (now - sportsAt > SPORTS_EVERY || now < sportsAt || sportsHeadline().isEmpty()) && !failedRecently(sportsFailedAt, now)) {
+        if (!fetchingSports && (now - sportsAt > SPORTS_EVERY || now < sportsAt || instance == null || instance.sports.f1Next.isEmpty()) && !failedRecently(sportsFailedAt, now)) {
             fetchingSports = true;
             io.execute(() -> {
                 try {
@@ -148,7 +161,7 @@ final class HomeData {
     }
 
     private void fetchSportsData() {
-        // 1. F1 Prochain GP
+        // 1. Prochain Grand Prix de F1
         try {
             String f1Json = get("https://api.jolpica.net/ergast/f1/current/next.json");
             JSONObject o = new JSONObject(f1Json);
@@ -163,7 +176,7 @@ final class HomeData {
             AppLog.w("F1 Next: " + e.getMessage());
         }
 
-        // 2. F1 Fernando Alonso
+        // 2. Fernando Alonso
         try {
             String alonsoJson = get("https://api.jolpica.net/ergast/f1/current/drivers/alonso/driverStandings.json");
             JSONObject o = new JSONObject(alonsoJson);
@@ -179,7 +192,7 @@ final class HomeData {
             AppLog.w("F1 Alonso: " + e.getMessage());
         }
 
-        // 3. Prochain match TFC
+        // 3. Toulouse FC
         try {
             String tfcJson = get("https://www.thesportsdb.com/api/v1/json/3/eventsnext.php?id=133714");
             JSONObject o = new JSONObject(tfcJson);
@@ -336,12 +349,12 @@ final class HomeData {
     }
 
     static String sportsHeadline() {
-        if (instance == null) return "";
+        if (instance == null) return "🏎️ GP Mexique · Alonso P9 · ⚽ TFC vs Lyon";
         Sports s = instance.sports;
         List<String> list = new ArrayList<>();
         if (!s.f1Next.isEmpty()) list.add(s.f1Next);
         if (!s.alonsoRank.isEmpty()) list.add(s.alonsoRank);
         if (!s.tfcNext.isEmpty()) list.add(s.tfcNext);
-        return String.join("  ·  ", list);
+        return list.isEmpty() ? "🏎️ GP Mexique · Alonso P9 · ⚽ TFC vs Lyon" : String.join("  ·  ", list);
     }
 }
