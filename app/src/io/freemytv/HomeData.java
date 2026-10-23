@@ -572,8 +572,8 @@ final class HomeData {
                 "Championnat de France Ligue 1",
                 new String[] {"Classement TFC", "Bilan Ligue 1", "Affiche L1"},
                 new String[] {tfcStanding, tfcRecord, psgL1},
-                "Diffuseur : DAZN / beIN Sports",
-                "DAZN / beIN",
+                "Diffuseur : Ligue 1+",
+                "LIGUE 1+",
                 "fr.free.aktu",
                 false,
                 0xFF231832, 0xFF121318));
