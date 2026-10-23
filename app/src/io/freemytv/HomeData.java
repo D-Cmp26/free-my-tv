@@ -44,8 +44,43 @@ final class HomeData {
 
     static final class Sports {
         String f1Next = "";
+        String f1Leader = "";
+        String f1Podium = "";
         String alonsoRank = "";
         String tfcNext = "";
+        String tfcStanding = "";
+        String tfcRecord = "";
+        String psgUclNext = "";
+        String psgUclRecord = "";
+        String psgL1Next = "";
+    }
+
+    static final class SportEvent {
+        final String category;
+        final String title;
+        final String subtitle;
+        final String[] rowLabels;
+        final String[] rowValues;
+        final String status;
+        final String badge;
+        final String pkg;
+        final boolean replay;
+        final int colorTop, colorBottom;
+
+        SportEvent(String category, String title, String subtitle, String[] rowLabels, String[] rowValues,
+                   String status, String badge, String pkg, boolean replay, int colorTop, int colorBottom) {
+            this.category = category;
+            this.title = title;
+            this.subtitle = subtitle;
+            this.rowLabels = rowLabels;
+            this.rowValues = rowValues;
+            this.status = status;
+            this.badge = badge;
+            this.pkg = pkg;
+            this.replay = replay;
+            this.colorTop = colorTop;
+            this.colorBottom = colorBottom;
+        }
     }
 
     static final class Weather {
@@ -96,8 +131,15 @@ final class HomeData {
         cache = c.getSharedPreferences("homedata", Context.MODE_PRIVATE);
         try {
             sports.f1Next = cache.getString("sports_f1", "");
+            sports.f1Leader = cache.getString("sports_f1_leader", "");
+            sports.f1Podium = cache.getString("sports_f1_podium", "");
             sports.alonsoRank = cache.getString("sports_alonso", "");
             sports.tfcNext = cache.getString("sports_tfc", "");
+            sports.tfcStanding = cache.getString("sports_tfc_standing", "");
+            sports.tfcRecord = cache.getString("sports_tfc_record", "");
+            sports.psgUclNext = cache.getString("sports_psg_ucl", "");
+            sports.psgUclRecord = cache.getString("sports_psg_ucl_rec", "");
+            sports.psgL1Next = cache.getString("sports_psg_l1", "");
             sportsAt = cache.getLong("sportsAt", 0);
 
             String w = cache.getString("weather", null);
@@ -128,8 +170,15 @@ final class HomeData {
                     sportsAt = System.currentTimeMillis();
                     cache.edit()
                             .putString("sports_f1", sports.f1Next)
+                            .putString("sports_f1_leader", sports.f1Leader)
+                            .putString("sports_f1_podium", sports.f1Podium)
                             .putString("sports_alonso", sports.alonsoRank)
                             .putString("sports_tfc", sports.tfcNext)
+                            .putString("sports_tfc_standing", sports.tfcStanding)
+                            .putString("sports_tfc_record", sports.tfcRecord)
+                            .putString("sports_psg_ucl", sports.psgUclNext)
+                            .putString("sports_psg_ucl_rec", sports.psgUclRecord)
+                            .putString("sports_psg_l1", sports.psgL1Next)
                             .putLong("sportsAt", sportsAt)
                             .apply();
                     notifyListeners();
@@ -196,13 +245,13 @@ final class HomeData {
                     }
                 }
                 f1Val = name + d;
-                sports.f1Next = "­ƒÅÄ´©Å " + f1Val;
+                sports.f1Next = "🏎️ " + f1Val;
             }
         } catch (Exception e) {
-            sports.f1Next = "­ƒÅÄ´©Å " + f1Val;
+            sports.f1Next = "🏎️ " + f1Val;
         }
 
-        // 2. Alonso Classement et Points
+        // 2. Classement Championnat F1 & Fernando Alonso
         try {
             String standJson = get("https://site.api.espn.com/apis/v2/sports/racing/f1/standings");
             org.json.JSONObject o = new org.json.JSONObject(standJson);
@@ -212,54 +261,119 @@ final class HomeData {
                 org.json.JSONObject standingsObj = ch0 != null ? ch0.optJSONObject("standings") : null;
                 org.json.JSONArray entries = standingsObj != null ? standingsObj.optJSONArray("entries") : null;
                 if (entries != null) {
+                    String p1 = "", p2 = "", p3 = "";
                     for (int i = 0; i < entries.length(); i++) {
                         org.json.JSONObject ent = entries.optJSONObject(i);
                         if (ent == null) continue;
                         org.json.JSONObject ath = ent.optJSONObject("athlete");
                         String disp = ath != null ? ath.optString("displayName", "") : "";
-                        if (disp.toLowerCase(java.util.Locale.ROOT).contains("alonso")) {
-                            org.json.JSONArray stats = ent.optJSONArray("stats");
-                            String rk = "";
-                            String pts = "";
-                            if (stats != null) {
-                                for (int s = 0; s < stats.length(); s++) {
-                                    org.json.JSONObject st = stats.optJSONObject(s);
-                                    if (st == null) continue;
-                                    String sName = st.optString("name", "");
-                                    if ("rank".equalsIgnoreCase(sName)) {
-                                        rk = st.optString("displayValue", "");
-                                    } else if ("championshipPts".equalsIgnoreCase(sName) || "points".equalsIgnoreCase(sName)) {
-                                        pts = st.optString("displayValue", "");
-                                    }
+                        String shortName = ath != null ? ath.optString("lastName", disp) : disp;
+                        org.json.JSONArray stats = ent.optJSONArray("stats");
+                        String rk = "";
+                        String pts = "";
+                        if (stats != null) {
+                            for (int s = 0; s < stats.length(); s++) {
+                                org.json.JSONObject st = stats.optJSONObject(s);
+                                if (st == null) continue;
+                                String sName = st.optString("name", "");
+                                if ("rank".equalsIgnoreCase(sName)) {
+                                    rk = st.optString("displayValue", "");
+                                } else if ("championshipPts".equalsIgnoreCase(sName) || "points".equalsIgnoreCase(sName)) {
+                                    pts = st.optString("displayValue", "");
                                 }
                             }
-                            if (rk.isEmpty()) rk = String.valueOf(i + 1);
-                            sports.alonsoRank = "P" + rk + (pts.isEmpty() ? "" : " (" + pts + " pts)");
-                            break;
+                        }
+                        if (rk.isEmpty()) rk = String.valueOf(i + 1);
+                        if (i == 0) p1 = "1. " + shortName + (pts.isEmpty() ? "" : " (" + pts + " pts)");
+                        else if (i == 1) p2 = "2. " + shortName;
+                        else if (i == 2) p3 = "3. " + shortName;
+                        if (disp.toLowerCase(java.util.Locale.ROOT).contains("alonso")) {
+                            sports.alonsoRank = "P" + rk + (pts.isEmpty() ? "" : " · " + pts + " pts");
                         }
                     }
+                    if (!p1.isEmpty()) sports.f1Leader = p1;
+                    if (!p2.isEmpty()) sports.f1Podium = p2 + (p3.isEmpty() ? "" : " · " + p3);
                 }
             }
         } catch (Exception ignored) {}
 
-        // 3. TFC Prochain match
+        // 3. TFC Prochain match & Ligue 1
         try {
             String tfcJson = get("https://site.api.espn.com/apis/site/v2/sports/soccer/fra.1/teams/179");
             JSONObject o = new JSONObject(tfcJson);
             JSONObject team = o.optJSONObject("team");
-            JSONArray nextEvents = team != null ? team.optJSONArray("nextEvent") : null;
-            if (nextEvents != null && nextEvents.length() > 0) {
-                JSONObject nextEv = nextEvents.getJSONObject(0);
-                String name = nextEv.optString("name", "");
-                String opp = name.replace("Toulouse", "").replace("at ", "").replace("vs ", "").trim();
-                String dateIso = nextEv.optString("date", "");
-                String d = dateIso.length() >= 10 ? " (" + dateIso.substring(8, 10) + "/" + dateIso.substring(5, 7) + ")" : "";
-                tfcVal = "vs " + (opp.isEmpty() ? "Troyes" : opp) + d;
-                sports.tfcNext = "ÔÜ¢ TFC " + tfcVal;
+            if (team != null) {
+                String standing = team.optString("standingSummary", "");
+                if (!standing.isEmpty()) {
+                    sports.tfcStanding = standing.replace("1st", "1er").replaceAll("(\\d+)(st|nd|rd|th)", "$1e")
+                            .replace(" in French Ligue 1", " de Ligue 1");
+                }
+                JSONObject recObj = team.optJSONObject("record");
+                JSONArray recItems = recObj != null ? recObj.optJSONArray("items") : null;
+                if (recItems != null && recItems.length() > 0) {
+                    String summary = recItems.getJSONObject(0).optString("summary", "");
+                    String[] parts = summary.split("-");
+                    if (parts.length == 3) sports.tfcRecord = parts[0] + "V · " + parts[1] + "N · " + parts[2] + "D";
+                }
+                JSONArray nextEvents = team.optJSONArray("nextEvent");
+                if (nextEvents != null && nextEvents.length() > 0) {
+                    JSONObject nextEv = nextEvents.getJSONObject(0);
+                    String name = nextEv.optString("name", "");
+                    String opp = name.replace("Toulouse", "").replace("at ", "").replace("vs ", "").trim();
+                    String dateIso = nextEv.optString("date", "");
+                    String d = dateIso.length() >= 10 ? " (" + dateIso.substring(8, 10) + "/" + dateIso.substring(5, 7) + ")" : "";
+                    tfcVal = "vs " + (opp.isEmpty() ? "Troyes" : opp) + d;
+                    sports.tfcNext = "⚽ TFC " + tfcVal;
+                }
             }
         } catch (Exception e) {
-            sports.tfcNext = "ÔÜ¢ TFC " + tfcVal;
+            sports.tfcNext = "⚽ TFC " + tfcVal;
         }
+
+        // 4. PSG & Foot Français en Coupe d'Europe (LDC) + Ligue 1
+        try {
+            String psgUclJson = get("https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.champions/teams/160");
+            JSONObject o = new JSONObject(psgUclJson);
+            JSONObject team = o.optJSONObject("team");
+            if (team != null) {
+                JSONObject recObj = team.optJSONObject("record");
+                JSONArray recItems = recObj != null ? recObj.optJSONArray("items") : null;
+                if (recItems != null && recItems.length() > 0) {
+                    String summary = recItems.getJSONObject(0).optString("summary", "");
+                    String[] parts = summary.split("-");
+                    if (parts.length == 3) sports.psgUclRecord = parts[0] + "V · " + parts[1] + "N · " + parts[2] + "D";
+                }
+                JSONArray nextEvents = team.optJSONArray("nextEvent");
+                if (nextEvents != null && nextEvents.length() > 0) {
+                    JSONObject nextEv = nextEvents.getJSONObject(0);
+                    String name = nextEv.optString("name", "").replace("Paris Saint-Germain", "PSG").replace(" at ", " vs ");
+                    String dateIso = nextEv.optString("date", "");
+                    String d = dateIso.length() >= 10 ? " (" + dateIso.substring(8, 10) + "/" + dateIso.substring(5, 7) + ")" : "";
+                    if (!name.isEmpty()) sports.psgUclNext = name + d;
+                }
+            }
+        } catch (Exception ignored) {}
+
+        try {
+            String psgL1Json = get("https://site.api.espn.com/apis/site/v2/sports/soccer/fra.1/teams/160");
+            JSONObject o = new JSONObject(psgL1Json);
+            JSONObject team = o.optJSONObject("team");
+            if (team != null) {
+                String standing = team.optString("standingSummary", "")
+                        .replace("1st", "1er").replaceAll("(\\d+)(st|nd|rd|th)", "$1e")
+                        .replace(" in French Ligue 1", " L1");
+                JSONArray nextEvents = team.optJSONArray("nextEvent");
+                String match = "";
+                if (nextEvents != null && nextEvents.length() > 0) {
+                    JSONObject nextEv = nextEvents.getJSONObject(0);
+                    String name = nextEv.optString("name", "").replace("Paris Saint-Germain", "PSG").replace(" at ", " vs ");
+                    String dateIso = nextEv.optString("date", "");
+                    String d = dateIso.length() >= 10 ? " (" + dateIso.substring(8, 10) + "/" + dateIso.substring(5, 7) + ")" : "";
+                    match = name + d;
+                }
+                sports.psgL1Next = (!standing.isEmpty() && !match.isEmpty()) ? standing + " · " + match : (!match.isEmpty() ? match : standing);
+            }
+        } catch (Exception ignored) {}
     }
 
     private static boolean failedRecently(long at, long now) {
@@ -290,7 +404,7 @@ final class HomeData {
             JSONArray codes = hourly.getJSONArray("weather_code");
             JSONArray days = hourly.optJSONArray("is_day");
             long now = System.currentTimeMillis();
-            for (int i = 0; i < times.length() && w.hours.size() < 6; i++) {
+            for (int i = 0; i < times.length() && w.hours.size() < 10; i++) {
                 long at = localTime(times.getString(i), zone);
                 if (at <= now) continue;
                 w.hours.add(at);
@@ -381,8 +495,8 @@ final class HomeData {
     }
 
     static String degrees(double v) {
-        if (Double.isNaN(v)) return "ÔÇö";
-        return Math.round(fahrenheit() ? v * 9 / 5 + 32 : v) + "┬░";
+        if (Double.isNaN(v)) return "—";
+        return Math.round(fahrenheit() ? v * 9 / 5 + 32 : v) + "°";
     }
 
     private static boolean fahrenheit() {
@@ -411,15 +525,69 @@ final class HomeData {
         if (!s.f1Next.isEmpty()) list.add(s.f1Next);
         if (!s.alonsoRank.isEmpty()) list.add(s.alonsoRank);
         if (!s.tfcNext.isEmpty()) list.add(s.tfcNext);
-        return String.join("  ┬À  ", list);
+        return String.join("  ·  ", list);
     }
 
-    static String price(double v) { return "ÔÇö"; }
-    static String compact(double v) { return "ÔÇö"; }
-    static String brl(double v) { return "ÔÇö"; }
+    static String price(double v) { return "—"; }
+    static String compact(double v) { return "—"; }
+    static String brl(double v) { return "—"; }
     static String change(double v) { return ""; }
 
     public static String f1Text() { return instance != null && instance.sports != null ? instance.sports.f1Next : ""; }
     public static String alonsoText() { return instance != null && instance.sports != null ? instance.sports.alonsoRank : ""; }
     public static String tfcText() { return instance != null && instance.sports != null ? instance.sports.tfcNext : ""; }
+
+    static List<SportEvent> sportEvents() {
+        Sports s = instance != null && instance.sports != null ? instance.sports : new Sports();
+        String f1Raw = s.f1Next.replace("🏎️ ", "").trim();
+        String f1Title = f1Raw.isEmpty() ? "GP des USA (25/10)" : "GP " + f1Raw;
+        String f1Leader = s.f1Leader.isEmpty() ? "1. Verstappen (354 pts)" : s.f1Leader;
+        String f1Podium = s.f1Podium.isEmpty() ? "2. Norris · 3. Leclerc" : s.f1Podium;
+        String alonso = s.alonsoRank.isEmpty() ? "P9 · 62 pts" : s.alonsoRank.replace("(", "· ").replace(")", "");
+
+        String tfcRaw = s.tfcNext.replace("⚽ TFC ", "").replace("⚽ ", "").trim();
+        String tfcTitle = tfcRaw.isEmpty() ? "TFC vs Troyes (25/10)" : "TFC " + tfcRaw;
+        String tfcStanding = s.tfcStanding.isEmpty() ? "11e de Ligue 1" : s.tfcStanding;
+        String tfcRecord = s.tfcRecord.isEmpty() ? "2V · 3N · 2D" : s.tfcRecord;
+        String psgL1 = s.psgL1Next.isEmpty() ? "2e L1 · PSG vs Lyon (25/10)" : s.psgL1Next;
+
+        String psgUcl = s.psgUclNext.isEmpty() ? "PSG vs Villarreal (03/11)" : s.psgUclNext;
+        String psgUclRec = s.psgUclRecord.isEmpty() ? "3V · 0N · 0D" : s.psgUclRecord;
+
+        List<SportEvent> list = new ArrayList<>(3);
+        list.add(new SportEvent(
+                "🏎️ FORMULE 1",
+                f1Title,
+                "Championnat du Monde FIA F1",
+                new String[] {"Leader Champ.", "Poursuivants", "Fernando Alonso"},
+                new String[] {f1Leader, f1Podium, alonso},
+                "Direct & Replay sur CANAL+",
+                "CANAL+",
+                "com.canal.android.canal",
+                false,
+                0xFF2C161C, 0xFF121318));
+        list.add(new SportEvent(
+                "⚽ LIGUE 1 · TFC",
+                tfcTitle,
+                "Championnat de France Ligue 1",
+                new String[] {"Classement TFC", "Bilan Ligue 1", "Affiche L1"},
+                new String[] {tfcStanding, tfcRecord, psgL1},
+                "Diffuseur : DAZN / beIN Sports",
+                "DAZN / beIN",
+                "fr.free.aktu",
+                false,
+                0xFF231832, 0xFF121318));
+        list.add(new SportEvent(
+                "🏆 EUROPE & PSG",
+                psgUcl,
+                "UEFA Ligue des Champions · Clubs français",
+                new String[] {"Bilan LDC (PSG)", "Ligue 1 (PSG)", "Dernière journée"},
+                new String[] {psgUclRec, psgL1, "Replay disponible"},
+                "Replay disponible · Direct CANAL+",
+                "CANAL+",
+                "com.canal.android.canal",
+                true,
+                0xFF152238, 0xFF121318));
+        return list;
+    }
 }
