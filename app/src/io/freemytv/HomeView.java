@@ -170,7 +170,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private List<HomeData.SportEvent> sportsItems = HomeData.sportEvents();
     private LinearGradient[] sportCardBg = new LinearGradient[3];
     private LinearGradient sportsTileSheen;
-    private float sportsShaderH;
+    private float sportsShaderH, sportsShaderDark = -1;
 
     private List<HomeApps.Item> others = new ArrayList<>();
     private Spring[] gridFocus = new Spring[0];
@@ -2548,24 +2548,32 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         float cx = base.centerX(), cy = base.centerY() - 6 * k * v;
         cell.set(cx - bw * s / 2, cy - bh * s / 2, cx + bw * s / 2, cy + bh * s / 2);
         float r = r0 * s;
+        float dk = dark();
 
         c.save();
         c.translate(cx, cy);
         c.scale(s, s);
         tmp.set(-bw / 2, -bh / 2, bw / 2, bh / 2);
         tmp.offset(0, (10 + 14 * f) * k);
-        shadowDeep.setColor(Ui.alpha(0xFF000000, tone(0.18f, 0.36f) + tone(0.22f, 0.3f) * f));
+        shadowDeep.setColor(Ui.alpha(0xFF000000, tone(0.12f, 0.36f) + tone(0.18f, 0.3f) * f));
         shadows.draw(c, tmp, r0, DEEP_BLUR * k, shadowDeep);
         if (f > 0.01f) {
             float spread = 4 * k;
             tmp.set(-bw / 2 - spread, -bh / 2 - spread, bw / 2 + spread, bh / 2 + spread);
-            halo.setColor(Ui.alpha(blend(0xFF000000, 0xFFFFFFFF, dark()), tone(0.38f, 0.58f) * f));
+            halo.setColor(Ui.alpha(blend(0xFF000000, 0xFFFFFFFF, dk), tone(0.38f, 0.58f) * f));
             shadows.draw(c, tmp, r0 + spread, 22 * k, halo);
         }
-        if (sportCardBg[i % 3] == null || sportsShaderH != bh) {
-            sportCardBg[i % 3] = new LinearGradient(-bw / 2, -bh / 2, bw / 2, bh / 2, ev.colorTop, ev.colorBottom, Shader.TileMode.CLAMP);
-            sportsTileSheen = new LinearGradient(0, -bh / 2, 0, 0, 0x24FFFFFF, 0x00FFFFFF, Shader.TileMode.CLAMP);
+        if (sportsShaderH != bh || sportsShaderDark != dk) {
+            sportCardBg = new LinearGradient[3];
+            sportsTileSheen = new LinearGradient(0, -bh / 2, 0, 0, tone(0x40FFFFFF, 0x24FFFFFF), 0x00FFFFFF, Shader.TileMode.CLAMP);
             sportsShaderH = bh;
+            sportsShaderDark = dk;
+        }
+        if (sportCardBg[i % 3] == null) {
+            int lightTop = i == 0 ? 0xFFF5EFEF : (i == 1 ? 0xFFF2EFF6 : 0xFFEEF2F7);
+            int lightBot = i == 0 ? 0xFFEAE2E0 : (i == 1 ? 0xFFE6E1EC : 0xFFE2E7EF);
+            sportCardBg[i % 3] = new LinearGradient(-bw / 2, -bh / 2, bw / 2, bh / 2,
+                    tone(lightTop, ev.colorTop), tone(lightBot, ev.colorBottom), Shader.TileMode.CLAMP);
         }
         tmp.set(-bw / 2, -bh / 2, bw / 2, bh / 2);
         tileFill.setShader(sportCardBg[i % 3]);
@@ -2590,19 +2598,19 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         tmp.set(bLeft, topY, bRight, topY + bH);
         boolean blueBadge = ev.badge.contains("DAZN") || ev.badge.contains("LIGUE");
         fill.setShader(null);
-        fill.setColor(blueBadge ? 0xFF1A98FF : 0xFFF5F5F7);
+        fill.setColor(blueBadge ? 0xFF1A98FF : tone(0xFF1D1D1F, 0xFFF5F5F7));
         c.drawRoundRect(tmp, 8 * k * s, 8 * k * s, fill);
-        sportsBadgeText.setColor(blueBadge ? 0xFFFFFFFF : 0xFF111113);
+        sportsBadgeText.setColor(blueBadge ? 0xFFFFFFFF : tone(0xFFFFFFFF, 0xFF111113));
         c.drawText(ev.badge, bLeft + bPadX, tmp.centerY() + Ui.halfCap(sportsBadgeText), sportsBadgeText);
 
         sportsCategory.setTextSize(17 * k * s);
-        sportsCategory.setColor(0xB8FFFFFF);
+        sportsCategory.setColor(tone(L_DIM, 0xB8FFFFFF));
         fitPaint.set(sportsCategory);
         String cat = TextUtils.ellipsize(ev.category, fitPaint, Math.max(10, bLeft - cell.left - padX - 12 * k * s), TextUtils.TruncateAt.END).toString();
         c.drawText(cat, cell.left + padX, tmp.centerY() + Ui.halfCap(sportsCategory), sportsCategory);
 
         sportsTitle.setTextSize(29 * k * s);
-        sportsTitle.setColor(WHITE);
+        sportsTitle.setColor(tone(L_INK, WHITE));
         fitPaint.set(sportsTitle);
         String title = TextUtils.ellipsize(ev.title, fitPaint, cell.width() - 2 * padX, TextUtils.TruncateAt.END).toString();
         c.drawText(title, cell.left + padX, cell.top + 96 * k * s, sportsTitle);
@@ -2615,11 +2623,11 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         for (int j = 0; j < Math.min(3, labels.length); j++) {
             float ry = cell.top + 122 * k * s + j * (rowH + rowGap);
             tmp.set(cell.left + padX, ry, cell.left + padX + rowW, ry + rowH);
-            fill.setColor(0x14FFFFFF);
+            fill.setColor(tone(0x66FFFFFF, 0x14FFFFFF));
             c.drawRoundRect(tmp, 12 * k * s, 12 * k * s, fill);
-            sportsRowLabel.setColor(0x99FFFFFF);
+            sportsRowLabel.setColor(tone(L_DIM, 0x99FFFFFF));
             c.drawText(labels[j].toUpperCase(Ui.locale()), tmp.left + 16 * k * s, ry + 26 * k * s, sportsRowLabel);
-            sportsRowValue.setColor(0xF5FFFFFF);
+            sportsRowValue.setColor(tone(L_INK, 0xF5FFFFFF));
             fitPaint.set(sportsRowValue);
             String val = TextUtils.ellipsize(values[j], fitPaint, rowW - 32 * k * s, TextUtils.TruncateAt.END).toString();
             c.drawText(val, tmp.left + 16 * k * s, ry + 57 * k * s, sportsRowValue);
@@ -2629,18 +2637,19 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         float statusBase = cell.bottom - 24 * k * s;
         float dotR = 5 * k * s;
         float dotCy = statusBase - Ui.halfCap(sportsStatus);
-        fill.setColor(ev.replay ? UP_COLOR : (ev.status.toLowerCase(java.util.Locale.ROOT).contains("direct") ? DOWN_COLOR : 0xFF38BDF8));
+        int replayColor = tone(0xFF1A8F3B, UP_COLOR);
+        fill.setColor(ev.replay ? replayColor : (ev.status.toLowerCase(java.util.Locale.ROOT).contains("direct") ? DOWN_COLOR : tone(0xFF0284C7, 0xFF38BDF8)));
         c.drawCircle(cell.left + padX + dotR, dotCy, dotR, fill);
-        sportsStatus.setColor(ev.replay ? UP_COLOR : 0xC7FFFFFF);
+        sportsStatus.setColor(ev.replay ? replayColor : tone(L_DIM, 0xC7FFFFFF));
         fitPaint.set(sportsStatus);
         String status = TextUtils.ellipsize(ev.status, fitPaint, cell.width() - 2 * padX - 20 * k * s, TextUtils.TruncateAt.END).toString();
         c.drawText(status, cell.left + padX + 18 * k * s, statusBase, sportsStatus);
 
-        border.setColor(0x22FFFFFF);
+        border.setColor(tone(0x18000000, 0x22FFFFFF));
         c.drawRoundRect(cell, r, r, border);
         if (f > 0.01f) {
             rim.setShader(null);
-            rim.setColor(Ui.alpha(blend(L_INK, 0xFFFFFFFF, dark()), tone(0.55f, 0.9f) * f));
+            rim.setColor(Ui.alpha(blend(L_INK, 0xFFFFFFFF, dk), tone(0.55f, 0.9f) * f));
             rim.setStrokeWidth(2.5f * k);
             c.drawRoundRect(cell, r, r, rim);
         }
