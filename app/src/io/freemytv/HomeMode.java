@@ -231,6 +231,7 @@ final class HomeMode {
             String home = originalHome(s);
             if (home.isEmpty() || home.startsWith(PKG + "/")) {
                 String found = currentHome(adb);
+                if (found == null) found = stockHome(adb);
                 home = found != null ? realHome(found) : "";
                 if (home.isEmpty()) AppLog.w("original home screen not recorded (HOME resolves to \"" + homeHolder(adb) + "\"): Original will pick the TV's own");
             }
@@ -270,9 +271,11 @@ final class HomeMode {
             // Off now and not on our list: the person turned it off, unless an earlier install of Free My TV did (its
             // list lives in the TV's settings too, since an uninstall erases our state file).
             Set<String> ours = recorded(adb);
+            String homePkg = packageOf(home);
             for (String pkg : packages(adb, "-d")) {
-                if (targets(home, dream, true).contains(pkg) && !disabled.contains(pkg) && !ours.contains(pkg)) keptOff.add(pkg);
+                if (!pkg.equals(homePkg) && targets(home, dream, true).contains(pkg) && !disabled.contains(pkg) && !ours.contains(pkg)) keptOff.add(pkg);
             }
+            if (homePkg != null) keptOff.remove(homePkg);
             keptOff.removeAll(ours);
             JSONObject before = state(c);
             before.put("keptOff", new JSONArray(sorted(keptOff)));
@@ -320,6 +323,10 @@ final class HomeMode {
         try (Adb adb = connect(c, s)) {
             busy(c, Ui.tr("Turning the apps back on…"));
             String home = originalHome(s);
+            if (home.isEmpty()) {
+                String stock = stockHome(adb);
+                if (stock != null) home = stock;
+            }
             Set<String> toEnable = new HashSet<>(stringList(s, "disabled"));
             for (String pkg : targets(home, originalDream(s), true)) {
                 if (!Arrays.asList(DEBLOAT).contains(pkg) && !Arrays.asList(ASSISTANT).contains(pkg)) toEnable.add(pkg);
@@ -346,7 +353,8 @@ final class HomeMode {
                 AppLog.w("remote buttons service: " + e.getMessage());
             }
             s = state(c);
-            s.put("mode", ORIGINAL).put("since", System.currentTimeMillis()).put("homeReverted", false)
+            if (!home.isEmpty()) s.put("originalHome", home);
+            s.put("mode", homeOk ? ORIGINAL : FREE).put("since", System.currentTimeMillis()).put("homeReverted", false)
                     .put("disabled", new JSONArray(failed)).remove("keptOff");
             save(c, s);
             if (failed.isEmpty() && homeOk) {
@@ -396,14 +404,19 @@ final class HomeMode {
             line = line.trim();
             if (line.startsWith("package:")) system.add(line.substring(8));
         }
+        String out = adb.shell("cmd package query-activities --brief --query-flags 512 --user 0"
+                + " -a android.intent.action.MAIN -c android.intent.category.HOME");
+        if (!out.contains("/")) {
+            out = adb.shell("cmd package query-activities --brief --user 0"
+                    + " -a android.intent.action.MAIN -c android.intent.category.HOME");
+        }
         String found = null;
-        for (String line : adb.shell("cmd package query-activities --brief --user 0 -a android.intent.action.MAIN"
-                + " -c android.intent.category.HOME").split("\n")) {
+        for (String line : out.split("\n")) {
             line = line.trim();
             if (!COMPONENT.matcher(line).matches() || line.startsWith(PKG + "/") || line.startsWith(GOOGLE_SETUP + "/")
-                    || line.contains("FallbackHome")) continue;
+                    || line.startsWith("android/") || line.contains("FallbackHome")) continue;
             if (!system.contains(packageOf(line))) continue;
-            if (found != null) return null;      // two system home screens: don't guess
+            if (found != null && !found.equals(line)) return null;      // two system home screens: don't guess
             found = line;
         }
         return found;
