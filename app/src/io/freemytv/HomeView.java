@@ -1155,6 +1155,12 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         tmp.offset(0, (4 + 14 * f + 6 * l) * k);
         shadowDeep.setColor(Ui.alpha(0xFF000000, tone(0.14f, 0.3f) + tone(0.18f, 0.3f) * fc + 0.14f * Ui.clamp(l)));
         shadows.draw(c, tmp, r0, DEEP_BLUR * k, shadowDeep);
+        if (fc > 0.01f) {
+            float spread = 3 * k;
+            tmp.set(-bw / 2 - spread, -bh / 2 - spread, bw / 2 + spread, bh / 2 + spread);
+            halo.setColor(Ui.alpha(blend(0xFF000000, 0xFFFFFFFF, dark()), tone(0.38f, 0.58f) * fc));
+            shadows.draw(c, tmp, r0 + spread, 22 * k, halo);
+        }
         c.restore();
         int[] style = TILE_STYLE.get(it.key);
         if (it.logo != null && style != null) {
@@ -1189,6 +1195,12 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             drawLogo(c, it, cell, s, 0);
         } else {
             if (it.tile != null) roundImage(c, it.tile, cell, r);
+        }
+        if (fc > 0.01f) {
+            rim.setShader(null);
+            rim.setColor(Ui.alpha(blend(L_INK, 0xFFFFFFFF, dark()), tone(0.45f, 0.85f) * fc));
+            rim.setStrokeWidth(2.5f * k);
+            c.drawRoundRect(cell, r, r, rim);
         }
     }
 
