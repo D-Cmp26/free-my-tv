@@ -176,10 +176,25 @@ final class HomeData {
                         .replace("MSC Cruises ", "").replace("United States", "USA")
                         .replace("Mexico City", "Mexique").replace(" Grand Prix", "").trim();
                 String dateIso = ev.optString("date", "");
-                if (dateIso.length() >= 10 && dateIso.contains("2026-10-23")) {
-                    dateIso = "2026-10-25";
+                String d = "";
+                if (dateIso.length() >= 10) {
+                    try {
+                        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US);
+                        java.util.Date parsed = sdf.parse(dateIso.substring(0, 10));
+                        if (parsed != null) {
+                            java.util.Calendar cal = java.util.Calendar.getInstance();
+                            cal.setTime(parsed);
+                            if (cal.get(java.util.Calendar.DAY_OF_WEEK) == java.util.Calendar.FRIDAY) {
+                                cal.add(java.util.Calendar.DAY_OF_MONTH, 2);
+                            }
+                            int day = cal.get(java.util.Calendar.DAY_OF_MONTH);
+                            int month = cal.get(java.util.Calendar.MONTH) + 1;
+                            d = String.format(java.util.Locale.US, " (%02d/%02d)", day, month);
+                        }
+                    } catch (Exception ignored) {
+                        d = " (" + dateIso.substring(8, 10) + "/" + dateIso.substring(5, 7) + ")";
+                    }
                 }
-                String d = dateIso.length() >= 10 ? " (" + dateIso.substring(8, 10) + "/" + dateIso.substring(5, 7) + ")" : "";
                 f1Val = name + d;
                 sports.f1Next = "­ƒÅÄ´©Å " + f1Val;
             }
