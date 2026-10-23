@@ -766,7 +766,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     }
 
     private void neutralGlass() {
-        int color = blend(0xFFEBEBF0, 0xFF141416, night);
+        int color = blend(0xFFDEDCD6, 0xFF141416, night);
         java.util.Arrays.fill(neutralFrostPx, color);
         java.util.Arrays.fill(neutralGlassPx, color);
         scene.setFrost(neutralFrostPx);
@@ -1043,8 +1043,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         tmp.offset(0, 18 * k);
         shadow.setColor(tone(0x1F000000, 0x52000000));
         shadows.draw(c, tmp, radius, SHADOW_BLUR * k, shadow);
-        scene.liquid(c, platterRect, radius, tone(0xFFFFFFFF, SMOKE), tone(0.42f, 0.12f), tone(0.03f, 0.08f),
-                tone(30, 34) * k, tone(22, 28) * k, tone(0.65f, 0.95f), 1);
+        scene.liquid(c, platterRect, radius, tone(0xFFF0EEE9, SMOKE), tone(0.32f, 0.12f), tone(0.01f, 0.08f),
+                tone(30, 34) * k, tone(22, 28) * k, tone(0.45f, 0.95f), 1);
     }
 
     private final class Quotes {
@@ -2451,7 +2451,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         boolean fading = bgFadeAt != 0;
         android.graphics.ColorFilter v = veil(tone(0.32f, 0.42f) * Ui.clamp(drawer.value), blend(0xFFFFFFFF, 0xFF000000, night));
         if (bgTo == null || (fading && bgFrom == null)) {
-            if (lightGradient == null) lightGradient = new LinearGradient(0, 0, 0, h, 0xFFF5F5F7, 0xFFE2E2E7, Shader.TileMode.CLAMP);
+            if (lightGradient == null) lightGradient = new LinearGradient(0, 0, 0, h, new int[] {0xFFEAE8E2, 0xFFDEDCD6, 0xFFD0CECA}, new float[] {0f, 0.55f, 1f}, Shader.TileMode.CLAMP);
             if (nightGradient == null) nightGradient = new LinearGradient(0, 0, 0, h, 0xFF1C1C1E, 0xFF0B0B0D, Shader.TileMode.CLAMP);
             fill.setColorFilter(v);
             fill.setColor(0xFF000000);
@@ -2504,7 +2504,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
                     shadows.draw(c, tmp, rr, SHADOW_BLUR * k, shadow);
                 }
                 fill.setShader(null);
-                fill.setColor(Ui.alpha(0xFFFFFFFF, focus));
+                fill.setColor(Ui.alpha(tone(0xFFF2F0EB, 0xFFFFFFFF), focus));
                 c.drawRoundRect(cell, rr, rr, fill);
             }
             Paint p = i == tab ? lTabOn : lTab;
@@ -2614,11 +2614,11 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             tmp.offset(0, (6 + 8 * f) * k);
             shadow.setColor(Ui.alpha(0xFF000000, tone(0.1f, 0.3f) + tone(0.14f, 0.2f) * f));
             shadows.draw(c, tmp, rad, SHADOW_BLUR * k, shadow);
-            scene.liquid(c, cell, rad, tone(0xFFFFFFFF, SMOKE), tone(0.55f, 0.5f), tone(0.02f, 0.01f), 12 * k, 8 * k,
-                    tone(0.6f, 0.45f), 1 - f);
+            scene.liquid(c, cell, rad, tone(0xFFF0EEE9, SMOKE), tone(0.45f, 0.5f), tone(0.01f, 0.01f), 12 * k, 8 * k,
+                    tone(0.45f, 0.45f), 1 - f);
             if (f > 0.01f) {
                 fill.setShader(null);
-                fill.setColor(Ui.alpha(0xFFFFFFFF, f));
+                fill.setColor(Ui.alpha(tone(0xFFF2F0EB, 0xFFFFFFFF), f));
                 c.drawCircle(cell.centerX(), cell.centerY(), rad, fill);
             }
             Symbols.draw(getContext(), c, lightButtons.get(i).symbol, cell.centerX(), cell.centerY(), 27 * k * s,

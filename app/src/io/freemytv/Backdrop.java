@@ -74,9 +74,9 @@ final class Backdrop {
             // Light design: everything comes from the photo without scrims.
             Bitmap wide = card(out, WIDE_W, WIDE_H), tall = card(out, TALL_W, TALL_H);
             int[] frost = reduce(out, FW, FH, 3, 3);
-            int[] light = whiten(frost.clone(), 0.82f);
+            int[] light = whiten(frost.clone(), FW, FH, 0.70f, 0.78f);
             int[] glass = reduce(out, GW, GH, 2, 2);
-            int[] lightGlass = whiten(glass.clone(), 0.74f);
+            int[] lightGlass = whiten(glass.clone(), GW, GH, 0.62f, 0.72f);
             int[] night = darken(frost.clone(), 0.76f);
             int[] nightGlass = darken(glass, 0.56f);
             out.recycle();
@@ -191,13 +191,26 @@ final class Backdrop {
         return px;
     }
 
-    private static int[] whiten(int[] px, float amount) {
-        for (int i = 0; i < px.length; i++) {
-            int p = px[i];
-            int r = Math.round(((p >> 16) & 255) * (1 - amount) + 255 * amount);
-            int g = Math.round(((p >> 8) & 255) * (1 - amount) + 255 * amount);
-            int b = Math.round((p & 255) * (1 - amount) + 255 * amount);
-            px[i] = 0xFF000000 | (r << 16) | (g << 8) | b;
+    private static int[] whiten(int[] px, int w, int h, float topAmount, float bottomAmount) {
+        for (int y = 0; y < h; y++) {
+            float ty = (float) y / Math.max(1, h - 1);
+            float smoothY = ty * ty * (3f - 2f * ty);
+            float amount = topAmount + (bottomAmount - topAmount) * smoothY;
+            float baseR = 234f - 24f * smoothY;
+            float baseG = 232f - 24f * smoothY;
+            float baseB = 226f - 22f * smoothY;
+            float dy = (ty - 0.42f) * 1.1f;
+            int row = y * w;
+            for (int x = 0; x < w; x++) {
+                float dx = ((float) x / Math.max(1, w - 1) - 0.5f) * 1.2f;
+                float vig = 1f - 0.06f * Math.min(1f, dx * dx + dy * dy);
+                float tr = baseR * vig, tg = baseG * vig, tb = baseB * vig;
+                int p = px[row + x];
+                int r = Math.round((((p >> 16) & 255) * (1 - amount) + 255 * amount) * (tr / 255f));
+                int g = Math.round((((p >> 8) & 255) * (1 - amount) + 255 * amount) * (tg / 255f));
+                int b = Math.round(((p & 255) * (1 - amount) + 255 * amount) * (tb / 255f));
+                px[row + x] = 0xFF000000 | (r << 16) | (g << 8) | b;
+            }
         }
         return px;
     }
