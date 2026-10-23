@@ -572,9 +572,9 @@ final class HomeData {
                 "Championnat de France Ligue 1",
                 new String[] {"Classement TFC", "Bilan Ligue 1", "Affiche L1"},
                 new String[] {tfcStanding, tfcRecord, psgL1},
-                "Diffuseur : Ligue 1+",
+                "Diffuseur : Ligue 1+ (OQEE)",
                 "LIGUE 1+",
-                "fr.free.aktu",
+                "net.oqee.androidtv",
                 false,
                 0xFF231832, 0xFF121318));
         list.add(new SportEvent(
