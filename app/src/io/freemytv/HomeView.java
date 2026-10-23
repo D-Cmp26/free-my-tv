@@ -523,14 +523,14 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         lCardTitle = Ui.text(Ui.semibold, 31 * k, L_INK);
         lCardTitle.setLetterSpacing(0.012f);
         lCardMeta = Ui.text(Ui.medium, 25 * k, L_DIM);
-        lQuote = Ui.numbers(Ui.regular, 21 * k, L_FAINT);
+        lQuote = Ui.text(Ui.semibold, 21 * k, L_INK);
         lTip = Ui.text(Ui.semibold, 25 * k, L_INK);
         lTip.setTextAlign(Paint.Align.CENTER);
         lDate = Ui.text(Ui.semibold, 34 * k, L_DIM);
         lClock = Ui.numbers(Ui.light, 200 * k, L_INK);
         lClock.setLetterSpacing(-0.01f);
         lWeather = Ui.text(Ui.medium, 34 * k, L_DIM);
-        lClockQuote = Ui.numbers(Ui.medium, 28 * k, L_DIM);
+        lClockQuote = Ui.text(Ui.semibold, 28 * k, L_INK);
         lightGradient = null;
         buttonPaint = Ui.text(Ui.semibold, 29 * k, INK);
         capsuleText = Ui.numbers(Ui.medium, 29 * k, 0xF2FFFFFF);
@@ -865,12 +865,12 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         lTabOn.setColor(tone(L_INK, WHITE));
         lCardTitle.setColor(tone(L_INK, WHITE));
         lCardMeta.setColor(tone(L_DIM, 0xFF98989D));
-        lQuote.setColor(tone(L_FAINT, 0xB8FFFFFF));
+        lQuote.setColor(tone(0xEB1D1D1F, 0xF2FFFFFF));
         lTip.setColor(tone(L_INK, WHITE));
         lDate.setColor(tone(L_DIM, 0xFF98989D));
         lClock.setColor(tone(L_INK, WHITE));
         lWeather.setColor(tone(L_DIM, 0xFF98989D));
-        lClockQuote.setColor(tone(L_DIM, 0xFF98989D));
+        lClockQuote.setColor(tone(0xE01D1D1F, 0xEBFFFFFF));
         staleQuote.setColor(tone(L_FAINT, 0x99FFFFFF));
     }
 
@@ -1113,14 +1113,17 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
 
         int textColor = text.getColor();
         float originalSize = text.getTextSize();
-        text.setTextSize(originalSize * 0.78f);
+        float right = CONTENT_R * k;
+        float maxW = clock ? right - MARGIN * k : right - (topRects[TABS - 1].right + 24 * k);
+        float width = text.measureText(headline);
+        if (width > maxW && maxW > 0) {
+            text.setTextSize(Math.max(16 * k, originalSize * maxW / width));
+            width = text.measureText(headline);
+        }
         text.setColor(Ui.alpha(textColor, fade));
 
         float halfCap = Ui.halfCap(text);
         float base = clock ? L_QUOTES_BASE * k : (L_TABBAR_TOP + L_TABBAR_H / 2) * k + halfCap;
-
-        float right = CONTENT_R * k;
-        float width = text.measureText(headline);
         float x = clock ? MARGIN * k : right - width;
 
         c.drawText(headline, x, base, text);
